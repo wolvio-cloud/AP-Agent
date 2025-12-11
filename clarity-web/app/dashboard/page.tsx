@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/hooks/useAuth'
 import ProtectedRoute from '@/components/auth/ProtectedRoute'
+import Link from 'next/link'
 import { LogOut } from 'lucide-react'
 
 function DashboardContent() {
@@ -69,12 +70,18 @@ function DashboardContent() {
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
           <div className="flex gap-4">
-            <button className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium">
+            <Link
+              href="/invoices/upload"
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+            >
               Upload Invoice
-            </button>
-            <button className="px-6 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition font-medium">
+            </Link>
+            <Link
+              href="/invoices"
+              className="px-6 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition font-medium"
+            >
               View All Invoices
-            </button>
+            </Link>
             <button className="px-6 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition font-medium">
               Reports
             </button>

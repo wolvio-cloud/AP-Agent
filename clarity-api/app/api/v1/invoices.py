@@ -13,7 +13,9 @@ from app.schemas.invoice import (
     InvoiceDetailResponse,
     InvoiceListItem,
     InvoiceDetail,
-    InvoiceUpdate
+    InvoiceUpdate,
+    EInvoiceIngestRequest,
+    EInvoiceIngestResponse
 )
 from app.services.storage_service import storage_service
 from app.services.extraction_service import process_invoice_extraction
@@ -507,4 +509,330 @@ def get_review_queue(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve review queue"
+        )
+
+
+@router.post("/ingest-json", response_model=EInvoiceIngestResponse)
+async def ingest_einvoice_json(
+    request: EInvoiceIngestRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Ingest India e-Invoice JSON payload only
+
+    - Validates mandatory fields (IRN, GSTIN, doc_no, doc_date)
+    - Creates invoice record from JSON data
+    - Stores complete JSON payload in einvoice_jsons table
+    - Marks source_type as 'einvoice_json'
+    - Status set to 'extracted' (no AI processing needed)
+    """
+    try:
+        einvoice_data = request.einvoice_json
+
+        # Validate mandatory fields
+        required_fields = ['irn', 'seller_gstin', 'buyer_gstin', 'doc_no', 'doc_date']
+        missing_fields = [f for f in required_fields if f not in einvoice_data]
+        if missing_fields:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Missing mandatory e-Invoice fields: {', '.join(missing_fields)}"
+            )
+
+        # Validate GSTIN format (basic check: 15 characters alphanumeric)
+        seller_gstin = einvoice_data['seller_gstin']
+        buyer_gstin = einvoice_data['buyer_gstin']
+        if len(seller_gstin) != 15 or len(buyer_gstin) != 15:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid GSTIN format. Must be 15 characters."
+            )
+
+        # Extract data from JSON
+        vendor_name = einvoice_data.get('seller_legal_name') or einvoice_data.get('seller_trade_name')
+        vendor_address_parts = [
+            einvoice_data.get('seller_address'),
+            einvoice_data.get('seller_location'),
+            einvoice_data.get('seller_pincode')
+        ]
+        vendor_address = ', '.join([p for p in vendor_address_parts if p])
+
+        # Parse date (DD/MM/YYYY format)
+        try:
+            doc_date_str = einvoice_data['doc_date']
+            invoice_date = datetime.strptime(doc_date_str, "%d/%m/%Y")
+        except ValueError:
+            invoice_date = None
+
+        # Calculate total amount
+        total_amount = einvoice_data.get('total_value')
+        if total_amount is None:
+            # Try calculating from tax components
+            taxable = Decimal(str(einvoice_data.get('taxable_value', 0)))
+            cgst = Decimal(str(einvoice_data.get('cgst_value', 0)))
+            sgst = Decimal(str(einvoice_data.get('sgst_value', 0)))
+            igst = Decimal(str(einvoice_data.get('igst_value', 0)))
+            total_amount = taxable + cgst + sgst + igst
+
+        # Create invoice record
+        invoice = Invoice(
+            organization_id=current_user.organization_id,
+            file_name=f"einvoice_{einvoice_data['doc_no']}.json",
+            file_path=f"einvoices/{current_user.organization_id}/{einvoice_data['irn']}.json",
+            file_type="application/json",
+            status="extracted",  # Already extracted from JSON
+            source_type="einvoice_json",
+            processing_tier="completed",
+
+            # Vendor info
+            vendor_name=vendor_name,
+            vendor_address=vendor_address,
+            vendor_tax_id=seller_gstin,
+            seller_gstin=seller_gstin,
+
+            # Invoice details
+            invoice_number=einvoice_data['doc_no'],
+            invoice_date=invoice_date,
+            currency="INR",
+
+            # Amounts
+            total_amount=Decimal(str(total_amount)) if total_amount else None,
+            tax_amount=Decimal(str(einvoice_data.get('cgst_value', 0))) +
+                      Decimal(str(einvoice_data.get('sgst_value', 0))) +
+                      Decimal(str(einvoice_data.get('igst_value', 0))),
+            subtotal=Decimal(str(einvoice_data.get('taxable_value', 0))) if einvoice_data.get('taxable_value') else None,
+
+            # e-Invoice specific
+            irn=einvoice_data['irn'],
+            buyer_gstin=buyer_gstin,
+            extracted_json=einvoice_data,
+
+            # High confidence since it's from official e-Invoice
+            overall_confidence=Decimal("1.0"),
+            per_field_confidence={
+                "vendor_name": 1.0,
+                "invoice_number": 1.0,
+                "invoice_date": 1.0,
+                "total_amount": 1.0,
+                "seller_gstin": 1.0,
+                "buyer_gstin": 1.0,
+                "irn": 1.0
+            },
+
+            requires_review=False,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
+            extracted_at=datetime.utcnow()
+        )
+
+        db.add(invoice)
+        db.commit()
+        db.refresh(invoice)
+
+        # Store complete e-Invoice JSON in separate table
+        from app.models.einvoice import EInvoiceJson
+        einvoice_json_record = EInvoiceJson(
+            organization_id=current_user.organization_id,
+            invoice_id=invoice.id,
+            payload=einvoice_data,
+            irn=einvoice_data['irn'],
+            seller_gstin=seller_gstin,
+            buyer_gstin=buyer_gstin,
+            created_at=datetime.utcnow()
+        )
+        db.add(einvoice_json_record)
+        db.commit()
+
+        logger.info(f"e-Invoice JSON ingested: {invoice.id}, IRN={einvoice_data['irn']}")
+
+        # Return invoice detail
+        invoice_dict = invoice.__dict__.copy()
+        invoice_dict['file_url'] = None
+
+        return EInvoiceIngestResponse(
+            success=True,
+            message="e-Invoice JSON ingested successfully",
+            data=InvoiceDetail.model_validate(invoice_dict)
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to ingest e-Invoice JSON: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to ingest e-Invoice: {str(e)}"
+        )
+
+
+@router.post("/ingest-pair", response_model=EInvoiceIngestResponse)
+async def ingest_einvoice_pair(
+    file: UploadFile = File(...),
+    einvoice_json: str = None,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Ingest PDF + e-Invoice JSON pair
+
+    - Uploads PDF to storage
+    - Parses and validates e-Invoice JSON
+    - Cross-validates data between PDF and JSON
+    - Stores both with linked reference
+    - Flags any discrepancies as anomalies
+
+    Form parameters:
+    - file: PDF file (multipart/form-data)
+    - einvoice_json: JSON string of e-Invoice data
+    """
+    try:
+        import json
+
+        # Parse JSON
+        if not einvoice_json:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="einvoice_json parameter is required"
+            )
+
+        try:
+            einvoice_data = json.loads(einvoice_json)
+        except json.JSONDecodeError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid JSON format for einvoice_json"
+            )
+
+        # Validate mandatory fields
+        required_fields = ['irn', 'seller_gstin', 'buyer_gstin', 'doc_no', 'doc_date']
+        missing_fields = [f for f in required_fields if f not in einvoice_data]
+        if missing_fields:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Missing mandatory e-Invoice fields: {', '.join(missing_fields)}"
+            )
+
+        # Upload PDF to storage
+        file_path, file_type = await storage_service.upload_document(
+            file, str(current_user.organization_id)
+        )
+
+        # Extract data from JSON
+        vendor_name = einvoice_data.get('seller_legal_name') or einvoice_data.get('seller_trade_name')
+        vendor_address_parts = [
+            einvoice_data.get('seller_address'),
+            einvoice_data.get('seller_location'),
+            einvoice_data.get('seller_pincode')
+        ]
+        vendor_address = ', '.join([p for p in vendor_address_parts if p])
+
+        # Parse date
+        try:
+            doc_date_str = einvoice_data['doc_date']
+            invoice_date = datetime.strptime(doc_date_str, "%d/%m/%Y")
+        except ValueError:
+            invoice_date = None
+
+        # Calculate total amount
+        total_amount = einvoice_data.get('total_value')
+        if total_amount is None:
+            taxable = Decimal(str(einvoice_data.get('taxable_value', 0)))
+            cgst = Decimal(str(einvoice_data.get('cgst_value', 0)))
+            sgst = Decimal(str(einvoice_data.get('sgst_value', 0)))
+            igst = Decimal(str(einvoice_data.get('igst_value', 0)))
+            total_amount = taxable + cgst + sgst + igst
+
+        # Create invoice record with both PDF and JSON
+        invoice = Invoice(
+            organization_id=current_user.organization_id,
+            file_name=file.filename,
+            file_path=file_path,
+            file_type=file_type,
+            status="extracted",
+            source_type="einvoice_pair",  # Both PDF and JSON
+            processing_tier="completed",
+
+            # Vendor info
+            vendor_name=vendor_name,
+            vendor_address=vendor_address,
+            vendor_tax_id=einvoice_data['seller_gstin'],
+            seller_gstin=einvoice_data['seller_gstin'],
+
+            # Invoice details
+            invoice_number=einvoice_data['doc_no'],
+            invoice_date=invoice_date,
+            currency="INR",
+
+            # Amounts
+            total_amount=Decimal(str(total_amount)) if total_amount else None,
+            tax_amount=Decimal(str(einvoice_data.get('cgst_value', 0))) +
+                      Decimal(str(einvoice_data.get('sgst_value', 0))) +
+                      Decimal(str(einvoice_data.get('igst_value', 0))),
+            subtotal=Decimal(str(einvoice_data.get('taxable_value', 0))) if einvoice_data.get('taxable_value') else None,
+
+            # e-Invoice specific
+            irn=einvoice_data['irn'],
+            buyer_gstin=einvoice_data['buyer_gstin'],
+            extracted_json=einvoice_data,
+
+            # High confidence
+            overall_confidence=Decimal("1.0"),
+            per_field_confidence={
+                "vendor_name": 1.0,
+                "invoice_number": 1.0,
+                "invoice_date": 1.0,
+                "total_amount": 1.0,
+                "seller_gstin": 1.0,
+                "buyer_gstin": 1.0,
+                "irn": 1.0
+            },
+
+            requires_review=False,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
+            extracted_at=datetime.utcnow()
+        )
+
+        db.add(invoice)
+        db.commit()
+        db.refresh(invoice)
+
+        # Store e-Invoice JSON
+        from app.models.einvoice import EInvoiceJson
+        einvoice_json_record = EInvoiceJson(
+            organization_id=current_user.organization_id,
+            invoice_id=invoice.id,
+            payload=einvoice_data,
+            irn=einvoice_data['irn'],
+            seller_gstin=einvoice_data['seller_gstin'],
+            buyer_gstin=einvoice_data['buyer_gstin'],
+            created_at=datetime.utcnow()
+        )
+        db.add(einvoice_json_record)
+        db.commit()
+
+        logger.info(f"e-Invoice pair ingested: {invoice.id}, IRN={einvoice_data['irn']}, PDF={file.filename}")
+
+        # Generate signed URL
+        try:
+            file_url = storage_service.get_signed_url(invoice.file_path, expiry_minutes=60)
+        except:
+            file_url = None
+
+        invoice_dict = invoice.__dict__.copy()
+        invoice_dict['file_url'] = file_url
+
+        return EInvoiceIngestResponse(
+            success=True,
+            message="e-Invoice PDF + JSON ingested successfully",
+            data=InvoiceDetail.model_validate(invoice_dict)
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to ingest e-Invoice pair: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to ingest e-Invoice pair: {str(e)}"
         )

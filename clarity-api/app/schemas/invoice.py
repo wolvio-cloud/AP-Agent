@@ -53,6 +53,12 @@ class InvoiceListItem(BaseModel):
     invoice_date: Optional[datetime] = None
     created_at: datetime
 
+    # Phase 4: Extraction fields
+    processing_tier: Optional[str] = None
+    overall_confidence: Optional[Decimal] = None
+    requires_review: Optional[bool] = None
+    review_priority: Optional[str] = None
+
 
 class InvoiceDetail(BaseModel):
     """Schema for detailed invoice view"""
@@ -95,6 +101,22 @@ class InvoiceDetail(BaseModel):
     gl_account: Optional[str] = None
     gl_confidence: Optional[Decimal] = None
 
+    # Phase 4: AI Extraction fields
+    extracted_json: Optional[dict] = None  # Complete extracted data
+    per_field_confidence: Optional[dict] = None  # Confidence for each field
+    processing_tier: Optional[str] = None
+    overall_confidence: Optional[Decimal] = None
+    requires_review: Optional[bool] = None
+    review_priority: Optional[str] = None
+    processing_history: Optional[List[dict]] = None
+
+    # Phase 4: India e-Invoice fields
+    irn: Optional[str] = None  # Invoice Reference Number
+    buyer_gstin: Optional[str] = None
+    seller_gstin: Optional[str] = None
+    source_type: Optional[str] = None  # 'pdf', 'image', 'einvoice_json'
+    anomaly_flags: Optional[List[str]] = None
+
     # Metadata
     extraction_data: Optional[dict] = None
     validation_issues: Optional[List[dict]] = None
@@ -126,4 +148,71 @@ class InvoiceListResponse(BaseModel):
 class InvoiceDetailResponse(BaseModel):
     """Response for invoice detail"""
     success: bool
+    data: InvoiceDetail
+
+
+# Phase 4: e-Invoice JSON ingestion schemas
+
+class EInvoiceJsonPayload(BaseModel):
+    """Schema for India e-Invoice JSON payload"""
+    # Mandatory fields
+    irn: str  # Invoice Reference Number (64 chars)
+    seller_gstin: str  # Seller GSTIN (15 chars)
+    buyer_gstin: str  # Buyer GSTIN (15 chars)
+    doc_no: str  # Document/Invoice number
+    doc_date: str  # Document date (DD/MM/YYYY)
+    doc_type: str  # INV, CRN, DBN
+
+    # Optional but common fields
+    total_value: Optional[Decimal] = None
+    cgst_value: Optional[Decimal] = None
+    sgst_value: Optional[Decimal] = None
+    igst_value: Optional[Decimal] = None
+    taxable_value: Optional[Decimal] = None
+
+    # Seller details
+    seller_legal_name: Optional[str] = None
+    seller_trade_name: Optional[str] = None
+    seller_address: Optional[str] = None
+    seller_location: Optional[str] = None
+    seller_pincode: Optional[str] = None
+    seller_state_code: Optional[str] = None
+
+    # Buyer details
+    buyer_legal_name: Optional[str] = None
+    buyer_trade_name: Optional[str] = None
+    buyer_address: Optional[str] = None
+    buyer_location: Optional[str] = None
+    buyer_pincode: Optional[str] = None
+    buyer_state_code: Optional[str] = None
+
+    # Additional metadata
+    supply_type: Optional[str] = None  # B2B, B2C, SEZWP, SEZWOP, EXPWP, EXPWOP, DEXP
+    reverse_charge: Optional[bool] = None
+    qr_code: Optional[str] = None
+    signed_invoice: Optional[str] = None
+    signed_qr_code: Optional[str] = None
+
+    # Line items
+    item_list: Optional[List[dict]] = None
+
+    # Store complete JSON
+    raw_json: Optional[dict] = None
+
+
+class EInvoiceIngestRequest(BaseModel):
+    """Request to ingest e-Invoice JSON only"""
+    einvoice_json: dict  # Complete e-Invoice JSON payload
+
+
+class EInvoiceIngestPairRequest(BaseModel):
+    """Request to ingest PDF + e-Invoice JSON pair"""
+    einvoice_json: dict  # e-Invoice JSON payload
+    # File will be uploaded separately via multipart form
+
+
+class EInvoiceIngestResponse(BaseModel):
+    """Response after e-Invoice ingestion"""
+    success: bool
+    message: str
     data: InvoiceDetail

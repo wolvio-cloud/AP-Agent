@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, ForeignKey, Numeric, Text
+from sqlalchemy import Column, String, DateTime, ForeignKey, Numeric, Text, Boolean
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -48,6 +48,20 @@ class Invoice(Base):
     # Extraction metadata
     extraction_data = Column(JSONB, default={})  # Full AI response with confidence scores
     validation_issues = Column(JSONB, default=[])  # List of validation issues
+
+    # Phase 4: AI Extraction fields
+    extracted_json = Column(JSONB)  # Complete extracted data from AI
+    per_field_confidence = Column(JSONB)  # Confidence for each field
+    processing_tier = Column(String(16), default="uploaded")  # uploaded, tier1, tier2, tier3, tier4, completed
+    irn = Column(String(64))  # India e-Invoice Reference Number
+    buyer_gstin = Column(String(20))  # Buyer GSTIN (India)
+    seller_gstin = Column(String(20))  # Seller GSTIN (India)
+    source_type = Column(String(32))  # pdf, image, einvoice-json, pdf+json
+    processing_history = Column(JSONB, default=[])  # History of processing attempts
+    overall_confidence = Column(Numeric(3, 2))  # Weighted overall confidence score
+    requires_review = Column(Boolean, default=False)  # Flagged for human review
+    review_priority = Column(String(16))  # high, medium, low
+    anomaly_flags = Column(JSONB, default=[])  # List of detected anomalies
 
     # Processing times
     extracted_at = Column(DateTime)

@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
+from app.api.v1 import auth
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -34,8 +35,10 @@ async def health_check():
     return {"status": "healthy"}
 
 
-# API routes will be added here
-# from app.api.v1 import auth, invoices, analytics
-# app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
+# Include API routers
+app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["auth"])
+
+# Additional routes will be added here
+# from app.api.v1 import invoices, analytics
 # app.include_router(invoices.router, prefix=f"{settings.API_V1_STR}/invoices", tags=["invoices"])
 # app.include_router(analytics.router, prefix=f"{settings.API_V1_STR}/analytics", tags=["analytics"])

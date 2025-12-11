@@ -2,9 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File,
 from sqlalchemy.orm import Session
 from typing import Optional, List
 from datetime import datetime
+from decimal import Decimal
 from app.core.deps import get_db, get_current_active_user
 from app.models.user import User
 from app.models.invoice import Invoice
+from app.models.einvoice import ExtractionMetric
 from app.schemas.invoice import (
     InvoiceUploadResponse,
     InvoiceListResponse,
@@ -14,6 +16,7 @@ from app.schemas.invoice import (
     InvoiceUpdate
 )
 from app.services.storage_service import storage_service
+from app.services.extraction_service import process_invoice_extraction
 import logging
 
 router = APIRouter()
@@ -47,6 +50,8 @@ async def upload_invoice(
             file_path=file_path,
             file_type=file_type,
             status="uploaded",
+            source_type=file_type,
+            processing_tier="uploaded",
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow()
         )
@@ -73,6 +78,143 @@ async def upload_invoice(
         )
 
 
+@router.post("/{invoice_id}/extract")
+async def extract_invoice_data(
+    invoice_id: str,
+    force_tier: Optional[int] = Query(None, ge=1, le=3, description="Force specific extraction tier for testing"),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Extract data from invoice using AI (mock for demo)
+
+    - Processes through 4-tier extraction pipeline
+    - Tier 1: Gemini 1.5 Flash (mock)
+    - Tier 2: Preprocessing + retry (mock)
+    - Tier 3: GPT-4V fallback (mock)
+    - Tier 4: Human review (if confidence < 0.85)
+
+    Query params:
+    - force_tier: Force specific tier (1-3) for testing
+    """
+    try:
+        # Get invoice
+        invoice = db.query(Invoice).filter(
+            Invoice.id == invoice_id,
+            Invoice.organization_id == current_user.organization_id,
+            Invoice.deleted_at.is_(None)
+        ).first()
+
+        if not invoice:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Invoice not found"
+            )
+
+        # Update status to processing
+        invoice.status = "processing"
+        invoice.processing_tier = f"tier{force_tier}" if force_tier else "tier1"
+        db.commit()
+
+        # Process extraction (mock)
+        result = process_invoice_extraction(
+            invoice.file_path,
+            invoice.file_name,
+            force_tier=force_tier
+        )
+
+        # Update invoice with extracted data
+        extracted_data = result["extracted_data"]
+        invoice.extracted_json = extracted_data
+        invoice.per_field_confidence = result["field_confidences"]
+        invoice.overall_confidence = Decimal(str(result["overall_confidence"]))
+        invoice.processing_tier = result["next_tier"]
+        invoice.requires_review = result["requires_review"]
+        invoice.review_priority = result["review_priority"]
+
+        # Map extracted data to invoice fields
+        invoice.vendor_name = extracted_data.get("vendor_name")
+        invoice.vendor_address = extracted_data.get("vendor_address")
+        invoice.vendor_tax_id = extracted_data.get("vendor_tax_id")
+        invoice.invoice_number = extracted_data.get("invoice_number")
+        invoice.invoice_date = datetime.fromisoformat(extracted_data["invoice_date"]) if extracted_data.get("invoice_date") else None
+        invoice.due_date = datetime.fromisoformat(extracted_data["due_date"]) if extracted_data.get("due_date") else None
+        invoice.currency = extracted_data.get("currency", "INR")
+        invoice.payment_terms = extracted_data.get("payment_terms")
+        invoice.subtotal = Decimal(str(extracted_data["subtotal"])) if extracted_data.get("subtotal") else None
+        invoice.tax_amount = Decimal(str(extracted_data["tax_amount"])) if extracted_data.get("tax_amount") else None
+        invoice.tax_rate = Decimal(str(extracted_data["tax_rate"])) if extracted_data.get("tax_rate") else None
+        invoice.total_amount = Decimal(str(extracted_data["total_amount"])) if extracted_data.get("total_amount") else None
+        invoice.line_items = extracted_data.get("line_items", [])
+        invoice.seller_gstin = extracted_data.get("seller_gstin")
+
+        # Update status
+        if result["requires_review"]:
+            invoice.status = "requires_review"
+        else:
+            invoice.status = "extracted"
+
+        invoice.extracted_at = datetime.utcnow()
+        invoice.updated_at = datetime.utcnow()
+
+        # Add to processing history
+        history_entry = {
+            "tier": result["processing_tier"],
+            "confidence": result["overall_confidence"],
+            "timestamp": datetime.utcnow().isoformat(),
+            "processing_time_ms": result["processing_time_ms"]
+        }
+        if invoice.processing_history is None:
+            invoice.processing_history = []
+        invoice.processing_history = list(invoice.processing_history) + [history_entry]
+
+        # Save extraction metrics
+        metric = ExtractionMetric(
+            organization_id=current_user.organization_id,
+            invoice_id=invoice.id,
+            processing_tier=result["processing_tier"],
+            processing_time_ms=result["processing_time_ms"],
+            confidence_score=Decimal(str(result["overall_confidence"])),
+            cost_usd=Decimal(str(result["cost_usd"])),
+            api_calls=result["api_calls"],
+            created_at=datetime.utcnow()
+        )
+        db.add(metric)
+
+        db.commit()
+        db.refresh(invoice)
+
+        logger.info(f"Invoice extracted: {invoice.id}, confidence={result['overall_confidence']:.2f}, tier={result['processing_tier']}")
+
+        return {
+            "success": True,
+            "message": "Extraction completed",
+            "data": {
+                "invoice_id": str(invoice.id),
+                "processing_tier": result["processing_tier"],
+                "overall_confidence": result["overall_confidence"],
+                "requires_review": result["requires_review"],
+                "review_priority": result["review_priority"],
+                "extracted_data": extracted_data,
+                "field_confidences": result["field_confidences"],
+                "processing_time_ms": result["processing_time_ms"]
+            }
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to extract invoice: {str(e)}")
+        # Update invoice status to error
+        if invoice:
+            invoice.status = "error"
+            db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to extract invoice: {str(e)}"
+        )
+
+
 @router.get("", response_model=InvoiceListResponse)
 def list_invoices(
     status_filter: Optional[str] = Query(None, alias="status"),
@@ -85,7 +227,7 @@ def list_invoices(
     List all invoices for the current user's organization
 
     Query parameters:
-    - status: Filter by status (uploaded, processing, extracted, approved, rejected, error)
+    - status: Filter by status (uploaded, processing, extracted, approved, rejected, error, requires_review)
     - page: Page number (default: 1)
     - limit: Items per page (default: 20, max: 100)
 
@@ -135,6 +277,7 @@ def get_invoice(
 
     - Returns full invoice details
     - Includes signed URL for document download (valid for 60 minutes)
+    - Shows extraction results and confidence scores
     - Only accessible by users in the same organization
     """
     try:
@@ -298,4 +441,70 @@ def delete_invoice(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete invoice"
+        )
+
+
+@router.get("/queue/review")
+def get_review_queue(
+    priority: Optional[str] = Query(None, description="Filter by priority: high, medium, low"),
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get invoices that require human review
+
+    Query parameters:
+    - priority: Filter by review priority (high, medium, low)
+    - page: Page number
+    - limit: Items per page
+
+    Returns invoices sorted by priority (high first) and created_at
+    """
+    try:
+        # Base query - invoices requiring review
+        query = db.query(Invoice).filter(
+            Invoice.organization_id == current_user.organization_id,
+            Invoice.requires_review == True,
+            Invoice.deleted_at.is_(None)
+        )
+
+        # Apply priority filter
+        if priority:
+            query = query.filter(Invoice.review_priority == priority)
+
+        # Get total count
+        total = query.count()
+
+        # Sort by priority and date
+        # High priority first, then medium, then low
+        priority_order = {
+            "high": 1,
+            "medium": 2,
+            "low": 3
+        }
+
+        invoices = query.order_by(Invoice.created_at.desc()).offset((page - 1) * limit).limit(limit).all()
+
+        # Sort in Python by priority
+        invoices_sorted = sorted(
+            invoices,
+            key=lambda x: (priority_order.get(x.review_priority or "low", 99), x.created_at),
+            reverse=True
+        )
+
+        return {
+            "success": True,
+            "data": [InvoiceListItem.model_validate(inv) for inv in invoices_sorted],
+            "total": total,
+            "page": page,
+            "limit": limit
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to get review queue: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve review queue"
         )

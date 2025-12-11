@@ -16,6 +16,7 @@ class Organization(Base):
     country = Column(String, default="US")
     currency = Column(String, default="USD")
     default_gl_account = Column(String, default="6000")
+    gstin = Column(String(20))  # India GST Identification Number
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

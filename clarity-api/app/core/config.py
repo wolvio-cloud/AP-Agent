@@ -21,9 +21,13 @@ class Settings(BaseSettings):
     # CORS
     BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000"]
 
-    # Google Cloud
+    # Google Cloud Storage
     GCS_BUCKET_NAME: str = "clarityap-invoices"
     GOOGLE_APPLICATION_CREDENTIALS: str = ""
+    GCS_KMS_KEY_NAME: str = ""  # Optional: Customer-Managed Encryption Key for SOC 2
+
+    # Redis
+    REDIS_URL: str = "redis://localhost:6379/0"
 
     # Gemini AI
     GEMINI_API_KEY: str = ""

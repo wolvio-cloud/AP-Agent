@@ -11,7 +11,7 @@ Features:
 """
 
 from sqlalchemy.orm import Session
-from sqlalchemy import Column, String, Integer, JSONB, DateTime, Enum as SQLEnum, ForeignKey
+from sqlalchemy import Column, String, Integer, Boolean, JSONB, DateTime, Enum as SQLEnum, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from app.models.base import BaseModel
 from app.models.user import User

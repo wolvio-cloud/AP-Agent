@@ -28,5 +28,4 @@ httpx==0.25.2
 
 # Background Tasks & Caching
 celery[redis]==5.3.4
-redis==5.0.1
 flower==2.0.1  # Task monitoring UI

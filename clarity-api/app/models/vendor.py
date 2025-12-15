@@ -17,7 +17,7 @@ class Vendor(Base):
     default_gl_account = Column(String)  # Default GL code for this vendor
     average_invoice_amount = Column(Numeric(10, 2), default=0)
     invoice_count = Column(Numeric, default=0)
-    metadata = Column(JSONB, default={})  # Additional vendor data
+    vendor_metadata = Column(JSONB, default={})  # Additional vendor data
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

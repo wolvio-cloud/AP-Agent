@@ -181,7 +181,7 @@ def upgrade() -> None:
     )
 
     # === ENHANCED VENDOR TABLE ===
-    op.add_column('vendors', sa.Column('average_invoice_amount', sa.Numeric(precision=10, scale=2)))
+    # Note: average_invoice_amount already exists from 001_initial migration
     op.add_column('vendors', sa.Column('total_invoices', sa.Integer, server_default='0'))
     op.add_column('vendors', sa.Column('last_invoice_date', sa.DateTime))
     op.add_column('vendors', sa.Column('payment_terms', sa.String(50)))
@@ -234,7 +234,7 @@ def downgrade() -> None:
     op.drop_column('vendors', 'payment_terms')
     op.drop_column('vendors', 'last_invoice_date')
     op.drop_column('vendors', 'total_invoices')
-    op.drop_column('vendors', 'average_invoice_amount')
+    # Note: average_invoice_amount belongs to 001_initial migration, not dropped here
 
     # Drop tables
     op.drop_table('validation_rules')

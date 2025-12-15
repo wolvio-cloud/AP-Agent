@@ -59,7 +59,7 @@ def upgrade() -> None:
         sa.Column('default_gl_account', sa.String),
         sa.Column('average_invoice_amount', sa.Numeric(10, 2), default=0),
         sa.Column('invoice_count', sa.Numeric, default=0),
-        sa.Column('metadata', JSONB, server_default='{}'),
+        sa.Column('vendor_metadata', JSONB, server_default='{}'),
         sa.Column('created_at', sa.DateTime, server_default=sa.func.now()),
         sa.Column('updated_at', sa.DateTime, server_default=sa.func.now(), onupdate=sa.func.now())
     )

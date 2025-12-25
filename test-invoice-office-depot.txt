@@ -1,0 +1,18 @@
+INVOICE
+
+Vendor: Office Depot
+Invoice Number: OD-2024-1234
+Invoice Date: December 10, 2024
+Due Date: January 9, 2025
+
+ITEMS:
+- Copy Paper (10 reams @ $45.00) .......... $450.00
+- Pens (5 boxes @ $12.00) ................. $60.00
+- Stapler ................................. $25.00
+
+                              Subtotal: $535.00
+                         Sales Tax 8.5%: $45.48
+                                ---------------
+                         TOTAL AMOUNT: $580.48
+
+Payment Terms: Net 30 Days

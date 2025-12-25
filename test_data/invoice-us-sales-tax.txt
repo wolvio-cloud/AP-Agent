@@ -1,0 +1,53 @@
+INVOICE
+
+TechSupply Inc.
+456 Silicon Valley Blvd
+San Jose, CA 95113
+United States
+Tax ID: 94-1234567
+
+BILL TO:
+Innovate Corp
+789 Market Street, Suite 500
+San Francisco, CA 94103
+United States
+
+Invoice Number: US-2024-0045
+Invoice Date: January 15, 2024
+Due Date: February 14, 2024
+Payment Terms: Net 30
+
+DESCRIPTION                           QTY    UNIT PRICE    AMOUNT
+-----------------------------------------------------------------
+MacBook Pro 16" M3 Max                 3      $3,499.00    $10,497.00
+Magic Mouse                            3        $79.00       $237.00
+USB-C to HDMI Adapter                  5        $49.00       $245.00
+AppleCare+ 3-Year Protection           3       $399.00     $1,197.00
+Software License - Adobe Creative      3       $599.00     $1,797.00
+-----------------------------------------------------------------
+
+                                           Subtotal: $13,973.00
+                          California Sales Tax (8.25%): $1,152.77
+
+                                        TOTAL DUE: $15,125.77
+
+Amount Due: Fifteen Thousand One Hundred Twenty-Five Dollars and Seventy-Seven Cents
+
+Payment Instructions:
+- Check payable to: TechSupply Inc.
+- Wire Transfer: Wells Fargo Bank
+  Account: 1234567890
+  Routing: 121000248
+- Credit Card: Call (408) 555-0199
+
+Terms & Conditions:
+1. Payment is due within 30 days of invoice date
+2. Late payments subject to 1.5% monthly finance charge
+3. All sales are final unless defective
+4. Returns must be authorized within 14 days
+
+Thank you for your business!
+
+Questions? Contact us at:
+Email: billing@techsupply.com
+Phone: (408) 555-0199

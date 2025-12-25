@@ -1,0 +1,68 @@
+INVOICE
+
+British IT Solutions Ltd
+25 Oxford Street
+London W1D 2DW
+United Kingdom
+VAT Registration Number: GB 123 4567 89
+Company Registration: 12345678
+
+INVOICE TO:
+Manchester Business Services Ltd
+100 Deansgate
+Manchester M3 2RH
+United Kingdom
+VAT Number: GB 987 6543 21
+
+Invoice Number: UK-2024-0089
+Invoice Date: 15th January 2024
+Due Date: 14th February 2024
+Payment Terms: 30 Days Net
+
+DESCRIPTION                         QTY    UNIT PRICE    NET AMOUNT
+--------------------------------------------------------------------
+HP EliteBook 850 G9                  6      £1,299.00     £7,794.00
+Docking Station - USB-C              6        £189.00     £1,134.00
+Wireless Keyboard & Mouse Set        6         £79.00       £474.00
+Monitor - 27" 4K Display             6        £449.00     £2,694.00
+Office 365 Business Premium          6        £159.00       £954.00
+  (Annual Subscription)
+Antivirus Software - Enterprise      6         £89.00       £534.00
+On-site Setup & Training            16         £95.00     £1,520.00
+--------------------------------------------------------------------
+
+                                         Subtotal: £15,104.00
+                                      VAT @ 20%: £3,020.80
+
+                                    TOTAL DUE: £18,124.80
+
+Amount in Words: Eighteen Thousand One Hundred Twenty-Four Pounds and Eighty Pence
+
+Payment Details:
+Bank: Barclays Bank PLC
+Sort Code: 20-00-00
+Account Number: 12345678
+Account Name: British IT Solutions Ltd
+Reference: UK-2024-0089
+
+BACS/Faster Payments accepted
+International Payments:
+IBAN: GB29 BARC 2000 0012 3456 78
+BIC: BARCGB22
+
+Terms & Conditions:
+1. Payment is due within 30 days from the invoice date
+2. Late payment interest will be charged at 8% above Bank of England base rate
+3. Statutory right to claim compensation for debt recovery costs under
+   Late Payment of Commercial Debts (Interest) Act 1998
+4. Title to goods remains with seller until payment received in full
+5. Goods may be returned within 14 days if faulty
+
+Registered Office: 25 Oxford Street, London W1D 2DW
+Directors: J. Smith, A. Jones
+
+For any queries regarding this invoice, please contact:
+Email: accounts@britishitsolutions.co.uk
+Phone: +44 20 7946 0958
+
+Thank you for your business!

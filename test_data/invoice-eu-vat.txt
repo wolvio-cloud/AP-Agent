@@ -1,0 +1,58 @@
+RECHNUNG / INVOICE
+
+EuroTech GmbH
+Frankfurter Straße 123
+10115 Berlin, Germany
+VAT Number: DE123456789
+Tax ID: 12/345/67890
+
+INVOICE TO:
+Digital Solutions AG
+Bahnhofstraße 45
+80335 München, Germany
+VAT Number: DE987654321
+
+Rechnungsnummer / Invoice Number: EU-2024-0123
+Rechnungsdatum / Invoice Date: 15.01.2024
+Fälligkeitsdatum / Due Date: 14.02.2024
+Zahlungsbedingungen / Payment Terms: 30 Tage netto / Net 30
+
+POSITION / DESCRIPTION              MENGE/QTY   PREIS/PRICE    BETRAG/AMOUNT
+-----------------------------------------------------------------------------
+Server Dell PowerEdge R740              2        €4,500.00      €9,000.00
+RAM Upgrade 128GB DDR4                  4          €850.00      €3,400.00
+SSD Storage 2TB NVMe                    4          €450.00      €1,800.00
+Network Switch 48-Port                  1        €1,200.00      €1,200.00
+Installation & Configuration            8          €150.00      €1,200.00
+Annual Support Contract                 1        €2,500.00      €2,500.00
+-----------------------------------------------------------------------------
+
+                                        Nettobetrag / Subtotal: €19,100.00
+                                          MwSt. 19% / VAT 19%: €3,629.00
+
+                                    Gesamtbetrag / TOTAL: €22,729.00
+
+Betrag in Worten: Zweiundzwanzigtausendsiebenhundertneunundzwanzig Euro
+
+Zahlungsinformationen / Payment Information:
+Bank: Deutsche Bank AG
+IBAN: DE89 3704 0044 0532 0130 00
+BIC/SWIFT: COBADEFFXXX
+Verwendungszweck / Reference: EU-2024-0123
+
+Geschäftsführer / Managing Director: Hans Mueller
+Handelsregister / Commercial Register: HRB 12345 B
+Registergericht / Registry Court: Amtsgericht Berlin
+
+Allgemeine Geschäftsbedingungen / Terms & Conditions:
+1. Zahlung innerhalb von 30 Tagen / Payment within 30 days
+2. Bei Zahlungsverzug 2% Zinsen pro Monat / 2% interest per month on overdue payments
+3. Eigentumsvorbehalt bis vollständiger Bezahlung / Retention of title until full payment
+4. Erfüllungsort und Gerichtsstand ist Berlin / Place of performance and jurisdiction is Berlin
+
+Vielen Dank für Ihren Auftrag!
+Thank you for your order!
+
+Bei Fragen / For questions:
+Email: rechnung@eurotech.de
+Tel: +49 30 12345678

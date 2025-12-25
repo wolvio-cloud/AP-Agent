@@ -1,0 +1,52 @@
+TAX INVOICE
+
+ABC Electronics Pvt Ltd
+123 MG Road, Bangalore - 560001
+Karnataka, India
+GSTIN: 29AABCT1332L1Z5
+PAN: AABCT1332L
+
+INVOICE TO:
+XYZ Technologies Ltd
+45 Whitefield Main Road
+Bangalore - 560066
+Karnataka, India
+GSTIN: 29AACFZ8391D1Z0
+
+Invoice Number: INV-2024-001
+Invoice Date: 15-Jan-2024
+Due Date: 14-Feb-2024
+
+PARTICULARS                     HSN/SAC    QTY    RATE      AMOUNT
+-----------------------------------------------------------------
+Dell Laptop - Latitude 7420      8471      5    ₹65,000   ₹3,25,000
+Wireless Mouse - Logitech MX     8471     10    ₹4,500    ₹45,000
+HDMI Cable - 2m                  8544     15    ₹500      ₹7,500
+Laptop Bag - Professional        4202      5    ₹2,000    ₹10,000
+Extended Warranty - 3 Years      9983      5    ₹5,000    ₹25,000
+-----------------------------------------------------------------
+
+                                          Subtotal: ₹4,12,500
+                                    CGST @ 9%: ₹37,125
+                                    SGST @ 9%: ₹37,125
+                                     Total GST: ₹74,250
+
+                               TOTAL AMOUNT: ₹4,86,750
+
+Amount in Words: Four Lakh Eighty Six Thousand Seven Hundred Fifty Rupees Only
+
+Terms & Conditions:
+1. Payment due within 30 days
+2. Interest @ 18% p.a. will be charged on delayed payments
+3. Subject to Bangalore jurisdiction
+4. Goods once sold will not be taken back
+
+Bank Details:
+Bank Name: HDFC Bank
+Account Number: 50200012345678
+IFSC Code: HDFC0001234
+Branch: MG Road, Bangalore
+
+For ABC Electronics Pvt Ltd
+
+Authorized Signatory

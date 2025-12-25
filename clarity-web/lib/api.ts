@@ -132,6 +132,62 @@ class ApiClient {
   isAuthenticated(): boolean {
     return !!this.getToken()
   }
+
+  // Invoice endpoints
+  async uploadInvoice(file: File): Promise<any> {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await this.client.post('/api/v1/invoices/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+    return response.data
+  }
+
+  async getInvoices(): Promise<any> {
+    const response = await this.client.get('/api/v1/invoices')
+    return response.data
+  }
+
+  async getInvoice(id: string): Promise<any> {
+    const response = await this.client.get(`/api/v1/invoices/${id}`)
+    return response.data
+  }
+
+  async updateInvoice(id: string, data: any): Promise<any> {
+    const response = await this.client.put(`/api/v1/invoices/${id}`, data)
+    return response.data
+  }
+
+  async deleteInvoice(id: string): Promise<any> {
+    const response = await this.client.delete(`/api/v1/invoices/${id}`)
+    return response.data
+  }
+
+  // QuickBooks export endpoints
+  async exportInvoiceIIF(id: string): Promise<Blob> {
+    const response = await this.client.get(`/api/v1/quickbooks/export/iif/${id}`, {
+      responseType: 'blob',
+    })
+    return response.data
+  }
+
+  async exportInvoicesIIFBatch(invoiceIds: string[]): Promise<Blob> {
+    const response = await this.client.post('/api/v1/quickbooks/export/iif/batch',
+      { invoice_ids: invoiceIds },
+      { responseType: 'blob' }
+    )
+    return response.data
+  }
+
+  async exportInvoicesCSV(): Promise<Blob> {
+    const response = await this.client.get('/api/v1/quickbooks/export/csv', {
+      responseType: 'blob',
+    })
+    return response.data
+  }
 }
 
 // Export singleton instance

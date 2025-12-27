@@ -1,756 +1,445 @@
-# ClarityAP - Step-by-Step Setup & Testing Guide
+# 🚀 ClarityAP - Complete Setup Guide
 
-## 🎯 Complete Guide from GitHub to Running Tests
+## What Was Fixed
 
-Follow these steps **exactly** to get ClarityAP running and test it.
+### ✅ Critical Fixes Applied
 
----
+1. **Backend Import Errors** - Fixed `ModuleNotFoundError` in 4 files
+   - Changed `from app.core.auth` → `from app.core.deps`
+   - Files: `invoices_simple.py`, `vendors.py`, `quickbooks.py`, `analytics.py`
 
-## 📋 Prerequisites Check
+2. **Missing Service Function** - Added `extract_invoice_data()` wrapper in `extraction_service.py`
 
-Before starting, verify you have these installed:
+3. **Docker Support** - Created Dockerfiles for both backend and frontend
 
-### Check What You Have:
+4. **Environment Configuration** - Updated `.env` files for Docker and local development
 
-**1. Check Python:**
-```bash
-python3 --version
-```
-✅ Need: Python 3.9 or higher
-❌ Don't have it? Install from: https://www.python.org/downloads/
+5. **Frontend Cache** - Cleared Next.js build cache
 
-**2. Check Node.js:**
-```bash
-node --version
-```
-✅ Need: Node.js 18 or higher
-❌ Don't have it? Install from: https://nodejs.org/
+## Prerequisites
 
-**3. Check Git:**
-```bash
-git --version
-```
-✅ Should see: git version 2.x.x
-❌ Don't have it? Install from: https://git-scm.com/downloads
-
-**4. Check PostgreSQL (Optional - we'll help you install):**
-```bash
-psql --version
-```
-✅ Great if you have it!
-❌ Don't worry, we'll set it up in Step 3
-
-**5. Check Docker (Optional but recommended):**
-```bash
-docker --version
-docker-compose --version
-```
-✅ Best option if you have both!
-❌ Don't have it? We'll use PostgreSQL instead
+- **Docker Desktop** (recommended) OR
+- **Python 3.11+** and **Node.js 18+** (for local setup)
+- **PostgreSQL 15** (if running locally without Docker)
 
 ---
 
-## 🚀 Step 1: Download from GitHub
+## Option 1: Docker Setup (Recommended - Easiest)
 
-### Option A: If you have the repository URL
+### Windows
 
-```bash
-# 1. Open Terminal (Mac/Linux) or Command Prompt (Windows)
+```cmd
+cd C:\Users\YourName\path\to\AP-Agent
 
-# 2. Navigate to where you want the project
-cd ~/Documents  # or any folder you prefer
+:: Pull latest changes
+git pull
 
-# 3. Clone the repository
-git clone https://github.com/YOUR-USERNAME/AP-Agent.git
+:: Stop any old containers
+docker-compose down
 
-# 4. Enter the project folder
-cd AP-Agent
+:: Build and start services
+docker-compose up --build -d
 
-# 5. Checkout the correct branch
-git checkout claude/setup-backend-dev-01FwJmG2Rkv27vt6YY3mWUs1
-
-# 6. Verify you have all files
-ls -la
-```
-
-### Option B: If you're already in the project
-
-```bash
-# 1. Make sure you're in the project folder
-cd /path/to/AP-Agent
-
-# 2. Pull latest changes
-git pull origin claude/setup-backend-dev-01FwJmG2Rkv27vt6YY3mWUs1
-
-# 3. Verify you're on the right branch
-git branch
-
-# Should show: * claude/setup-backend-dev-01FwJmG2Rkv27vt6YY3mWUs1
-```
-
----
-
-## 🔧 Step 2: Choose Your Setup Method
-
-You have 3 options. **Pick the one that matches your system:**
-
-### 🎯 OPTION A: Docker (Easiest - Recommended if you have Docker)
-
-**Why this is best:**
-- Everything works automatically
-- PostgreSQL included
-- No complex setup needed
-- Works the same on Mac, Windows, Linux
-
-**Requirements:**
-- Docker Desktop installed
-- Docker Compose installed
-
-**Go to:** [Step 3A - Docker Setup](#step-3a-docker-setup)
-
----
-
-### 🎯 OPTION B: Local PostgreSQL (If you have or can install PostgreSQL)
-
-**Why choose this:**
-- Full control over database
-- Good for development
-- Faster than Docker
-
-**Requirements:**
-- PostgreSQL installed
-- Can start PostgreSQL service
-
-**Go to:** [Step 3B - Local PostgreSQL Setup](#step-3b-local-postgresql-setup)
-
----
-
-### 🎯 OPTION C: Cloud Database (No local database needed)
-
-**Why choose this:**
-- No PostgreSQL installation needed
-- Works on any computer
-- Free tier available
-
-**Requirements:**
-- Internet connection
-- 5 minutes to set up free database
-
-**Go to:** [Step 3C - Cloud Database Setup](#step-3c-cloud-database-setup)
-
----
-
-## 📦 Step 3A: Docker Setup
-
-### 3A.1: Verify Docker is Running
-
-```bash
-# Check Docker is running
-docker ps
-
-# If you get an error, start Docker Desktop application
-```
-
-### 3A.2: Start All Services
-
-```bash
-# This starts PostgreSQL, Backend, and Frontend
-docker-compose up -d
-
-# Wait for services to start (about 30 seconds)
-```
-
-### 3A.3: Check Services are Running
-
-```bash
+:: Check if services are running
 docker-compose ps
 
-# You should see:
-# - postgres (running)
-# - backend (running)
-# - frontend (running)
+:: View logs
+docker-compose logs -f api
 ```
 
-### 3A.4: Run Database Migrations
+### Mac/Linux
 
 ```bash
-docker-compose exec backend alembic upgrade head
+cd ~/path/to/AP-Agent
+
+# Pull latest changes
+git pull
+
+# Stop any old containers
+docker-compose down
+
+# Build and start services
+docker-compose up --build -d
+
+# Check if services are running
+docker-compose ps
+
+# View logs
+docker-compose logs -f api
 ```
 
-### 3A.5: Verify Everything Works
+### ✅ Verify Backend is Working
 
-```bash
-# Check backend is responding
-curl http://localhost:8000/health
+Open http://localhost:8000/docs - you should see:
+- Swagger API documentation
+- Three sections: auth, invoices, quickbooks
+- Green "Authorize" button
 
-# Should see: {"status":"ok"} or similar
-```
+### Start Frontend
 
-**✅ Success! Go to:** [Step 4 - Run Tests](#step-4-run-tests)
-
----
-
-## 📦 Step 3B: Local PostgreSQL Setup
-
-### 3B.1: Install PostgreSQL (if needed)
-
-**On Mac:**
-```bash
-brew install postgresql@15
-brew services start postgresql@15
-```
-
-**On Ubuntu/Debian Linux:**
-```bash
-sudo apt update
-sudo apt install postgresql postgresql-contrib
-sudo service postgresql start
-```
-
-**On Windows:**
-Download from: https://www.postgresql.org/download/windows/
-Then run the installer
-
-### 3B.2: Start PostgreSQL
-
-**On Mac:**
-```bash
-brew services start postgresql@15
-```
-
-**On Ubuntu/Debian:**
-```bash
-sudo service postgresql start
-```
-
-**On Windows:**
-```bash
-# PostgreSQL should auto-start
-# Or: net start postgresql-x64-15
-```
-
-### 3B.3: Verify PostgreSQL is Running
-
-```bash
-psql --version
-pg_isready
-
-# Should see: "accepting connections"
-```
-
-### 3B.4: Run the Setup Script
-
-```bash
-# Make script executable
-chmod +x QUICK-START.sh
-
-# Run it
-./QUICK-START.sh
-
-# When prompted, select option [2] Local PostgreSQL
-```
-
-The script will:
-- ✅ Create Python virtual environment
-- ✅ Install all backend dependencies
-- ✅ Create database
-- ✅ Run migrations
-- ✅ Install frontend dependencies
-- ✅ Configure environment files
-
-### 3B.5: Start the Servers
-
-**Terminal 1 - Backend:**
-```bash
-cd clarity-api
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-uvicorn app.main:app --reload --port 8000
-```
-
-**Terminal 2 - Frontend:**
 ```bash
 cd clarity-web
+
+# Delete Next.js cache
+rm -rf .next node_modules/.cache  # Mac/Linux
+# OR
+rmdir /s /q .next                 # Windows
+
+# Install dependencies (if needed)
+npm install
+
+# Start dev server
 npm run dev
 ```
 
-**Wait for both to start (about 30 seconds)**
-
-### 3B.6: Verify Everything Works
-
-Open browser:
-- Frontend: http://localhost:3000
-- Backend API Docs: http://localhost:8000/docs
-
-**✅ Success! Go to:** [Step 4 - Run Tests](#step-4-run-tests)
+Open http://localhost:3000
 
 ---
 
-## ☁️ Step 3C: Cloud Database Setup
+## Option 2: Local Development (Without Docker)
 
-### 3C.1: Create Free PostgreSQL Database
+### Step 1: Database Setup
 
-**Option 1: Supabase (Recommended)**
-1. Go to: https://supabase.com
-2. Click "Start your project"
-3. Sign up with GitHub
-4. Click "New Project"
-5. Fill in:
-   - Name: `clarityap`
-   - Database Password: (create a strong password - SAVE THIS!)
-   - Region: Choose closest to you
-6. Click "Create new project"
-7. Wait 2-3 minutes for database to be ready
-
-**Option 2: Railway**
-1. Go to: https://railway.app
-2. Sign up with GitHub
-3. Click "New Project"
-4. Click "Provision PostgreSQL"
-5. Copy connection string
-
-**Option 3: Neon**
-1. Go to: https://neon.tech
-2. Sign up with GitHub
-3. Create new project
-4. Copy connection string
-
-### 3C.2: Get Your Connection String
-
-**For Supabase:**
-1. Go to Project Settings (gear icon)
-2. Click "Database"
-3. Scroll to "Connection string"
-4. Select "URI" tab
-5. Copy the connection string
-6. It looks like: `postgresql://postgres:[YOUR-PASSWORD]@db.xxx.supabase.co:5432/postgres`
-
-**For Railway/Neon:**
-- Copy the connection string from the dashboard
-
-### 3C.3: Configure the Backend
-
+**Option A: PostgreSQL in Docker**
 ```bash
-# Edit the .env file
-cd clarity-api
-nano .env  # or use any text editor
-
-# Replace the DATABASE_URL line with your connection string:
-DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@your-host.supabase.co:5432/postgres
+docker run -d \
+  --name clarityap-postgres \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=clarity \
+  -p 5432:5432 \
+  postgres:15-alpine
 ```
 
-### 3C.4: Run Setup
+**Option B: Local PostgreSQL**
+- Install PostgreSQL 15
+- Create database: `CREATE DATABASE clarity;`
 
-```bash
-# Go back to project root
-cd ..
+### Step 2: Backend Setup
 
-# Run setup script
-./QUICK-START.sh
-
-# When prompted, select option [3] Cloud Database
-# Paste your connection string when asked
-```
-
-### 3C.5: Start Servers
-
-**Terminal 1 - Backend:**
 ```bash
 cd clarity-api
-source venv/bin/activate
-uvicorn app.main:app --reload --port 8000
+
+# Create virtual environment
+python -m venv venv
+
+# Activate virtual environment
+source venv/bin/activate     # Mac/Linux
+# OR
+venv\Scripts\activate        # Windows
+
+# Copy environment file
+cp .env.local .env
+
+# Edit .env and set:
+# DATABASE_URL=postgresql://postgres:postgres@localhost:5432/clarity
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run migrations
+alembic upgrade head
+
+# Create storage directory
+mkdir -p storage/invoices
+
+# Start server
+uvicorn app.main:app --reload
 ```
 
-**Terminal 2 - Frontend:**
+Backend runs at http://localhost:8000
+
+### Step 3: Frontend Setup
+
 ```bash
 cd clarity-web
+
+# Install dependencies
+npm install
+
+# Clear cache
+rm -rf .next
+
+# Start dev server
 npm run dev
 ```
 
-**✅ Success! Go to:** [Step 4 - Run Tests](#step-4-run-tests)
+Frontend runs at http://localhost:3000
 
 ---
 
-## 🧪 Step 4: Run Tests
+## Environment Variables
 
-Now that everything is running, let's test it!
+### Backend (.env)
 
-### 4.1: Automated API Tests
+```env
+# For Docker
+DATABASE_URL=postgresql://postgres:postgres@db:5432/clarity
 
-**Open a new terminal (Terminal 3):**
+# For Local
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/clarity
 
-```bash
-# Make sure you're in the project root
-cd /path/to/AP-Agent
+# Required
+SECRET_KEY=dev-secret-key-change-in-production
+ENVIRONMENT=development
+BACKEND_CORS_ORIGINS=["http://localhost:3000"]
 
-# Make the test script executable
-chmod +x run_e2e_tests.sh
-
-# Run the tests
-./run_e2e_tests.sh
+# Optional (uses fallbacks if not set)
+GOOGLE_APPLICATION_CREDENTIALS=
+GEMINI_API_KEY=
+GCS_BUCKET_NAME=clarityap-invoices
 ```
 
-**What you should see:**
-```
-[TEST] Checking if API server is running...
-[PASS] API server is running at http://localhost:8000
-[TEST] Registering new user...
-[PASS] User registration successful
-[TEST] Logging in user...
-[PASS] Login successful, token obtained
-... (12 tests total)
-```
+### Frontend (.env.local)
 
-**Expected Results:**
-- ✅ All 12 tests should PASS
-- ✅ Files exported: IIF and CSV files in `/tmp/`
-- ✅ No errors
-
-**If tests fail:**
-1. Check backend is running (Terminal 1)
-2. Check frontend is running (Terminal 2)
-3. Check backend logs for errors
-4. Make sure ports 3000 and 8000 are not blocked
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
 
 ---
 
-### 4.2: Manual UI Tests
+## 🧪 Testing the Application
 
-**Open your browser:** http://localhost:3000
+### 1. Register an Account
 
-#### Test 1: Registration
-
-1. Click "Sign Up" or "Register"
-2. Fill in the form:
-   - First Name: `Test`
-   - Last Name: `User`
-   - Email: `test@example.com`
-   - Company: `Test Company`
-   - Password: `TestPassword123!`
-   - Confirm Password: `TestPassword123!`
-3. Check "I agree to Terms & Conditions"
-4. Click "Create Account"
-
-**✅ Should see:** Welcome message or redirect to dashboard
-
-#### Test 2: Login
-
-1. If redirected to dashboard, logout first
-2. Go back to login page
-3. Enter:
-   - Email: `test@example.com`
-   - Password: `TestPassword123!`
-4. Click "Sign In"
-
-**✅ Should see:** Dashboard page
-
-#### Test 3: Upload Invoice (India)
-
-1. On Dashboard, find the upload zone
-2. Drag and drop: `test_data/invoice-india-gst.txt`
-   OR click to browse and select it
-3. Wait 3-5 seconds for AI extraction
-
-**✅ Should see:**
-- Upload successful message
-- Invoice form populated with data
-- GSTIN field: `29AABCT1332L1Z5`
-- PAN field: `AABCT1332L`
-- Currency: INR (₹)
-- Total: ₹4,86,750
-
-#### Test 4: Edit Invoice
-
-1. Change Vendor Name to: `ABC Electronics Updated`
-2. Click on line item #1
-3. Change quantity from 5 to 6
-4. **✅ Should see:** Amount auto-calculate to ₹3,90,000
-
-#### Test 5: Save Invoice
-
-1. Click "Save Changes" button
-2. **✅ Should see:** Success message
-3. Refresh page
-4. **✅ Should see:** Changes are saved
-
-#### Test 6: Export to QuickBooks
-
-1. Click "Export to QuickBooks" button
-2. **✅ Should see:** File downloads (invoice_XXX.iif)
-3. Open the file in a text editor
-4. **✅ Should see:** Properly formatted IIF content
-
-#### Test 7: Go to Export Page
-
-1. Click "Export" in navigation
-2. **✅ Should see:**
-   - Table with your invoice
-   - Currency symbol: ₹
-   - GSTIN and PAN badges
-   - Status badge
-
-#### Test 8: Test Search
-
-1. Type "ABC" in search box
-2. **✅ Should see:** Your invoice appears
-3. Type "XYZ"
-4. **✅ Should see:** No results
-
-#### Test 9: Batch Export
-
-1. Select checkbox next to your invoice
-2. Click "Export Selected IIF"
-3. **✅ Should see:** Batch IIF file downloads
-
-#### Test 10: Test Other Countries
-
-Upload and verify each test invoice:
-
-**US Invoice:**
 ```bash
-test_data/invoice-us-sales-tax.txt
+curl -X POST http://localhost:8000/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "test@example.com",
+    "password": "Test123!",
+    "first_name": "John",
+    "last_name": "Doe",
+    "company_name": "Acme Corp"
+  }'
 ```
-✅ Currency: $ (USD)
-✅ Tax type: Sales Tax
-✅ No GSTIN/PAN fields
 
-**EU Invoice:**
+### 2. Login
+
 ```bash
-test_data/invoice-eu-vat.txt
+curl -X POST http://localhost:8000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "test@example.com",
+    "password": "Test123!"
+  }'
 ```
-✅ Currency: € (EUR)
-✅ Tax type: VAT
-✅ VAT Number field populated
 
-**UK Invoice:**
-```bash
-test_data/invoice-uk-vat.txt
-```
-✅ Currency: £ (GBP)
-✅ Tax type: VAT
-✅ VAT Number field populated
+Save the `access_token` from the response.
 
----
+### 3. Upload Invoice (Using UI)
 
-## 📊 Step 5: Verify All Features
+1. Go to http://localhost:3000
+2. Register/Login
+3. Click "Upload Invoice"
+4. Select a PDF/image file
+5. Wait for AI extraction (uses mock data for demo)
+6. Review extracted data
+7. Click "Save"
 
-### Checklist - Mark as you test:
+### 4. Export to QuickBooks
 
-**Authentication:**
-- [ ] Can register new account
-- [ ] Password strength indicator works
-- [ ] Can login with correct credentials
-- [ ] Cannot login with wrong credentials
-- [ ] Can logout
-
-**Dashboard - Upload:**
-- [ ] Drag and drop works
-- [ ] Click to browse works
-- [ ] File validation (only PDF, JPG, PNG)
-- [ ] Size limit (10MB max)
-- [ ] Upload progress shows
-- [ ] AI extraction works (3-5 seconds)
-
-**Dashboard - Invoice Form:**
-- [ ] All fields editable
-- [ ] Currency dropdown shows 8 currencies
-- [ ] Tax type dropdown works
-- [ ] Conditional fields appear:
-  - [ ] GST → Shows GSTIN & PAN
-  - [ ] VAT → Shows VAT Number
-- [ ] Line items can be added
-- [ ] Line items can be removed
-- [ ] Auto-calculation works:
-  - [ ] Line amount = qty × rate
-  - [ ] Total = subtotal + tax
-
-**Dashboard - Actions:**
-- [ ] Save button works
-- [ ] Export to QuickBooks works
-- [ ] Delete button works (with confirmation)
-
-**Export Page:**
-- [ ] All invoices listed
-- [ ] Search works
-- [ ] Filter by status works
-- [ ] Select all / Deselect all works
-- [ ] Currency symbols correct (₹, $, €, £)
-- [ ] Region badges show (GSTIN, PAN, VAT)
-- [ ] Status badges show
-- [ ] Single export works
-- [ ] Batch export works
-- [ ] CSV export works
-- [ ] View button goes to dashboard
-- [ ] Delete button works
-
-**International Support:**
-- [ ] Indian invoice: GSTIN, PAN, ₹ symbol
-- [ ] US invoice: $ symbol, Sales Tax
-- [ ] EU invoice: € symbol, VAT number
-- [ ] UK invoice: £ symbol, VAT number
-
-**Responsive Design:**
-- [ ] Works on desktop (1920px)
-- [ ] Works on laptop (1366px)
-- [ ] Works on tablet (768px)
-- [ ] Works on mobile (375px)
-
----
-
-## ✅ Step 6: Success! What's Next?
-
-If all tests pass, you have a **fully functional international invoice processing system!**
-
-### What You've Achieved:
-✅ Backend API running with authentication
-✅ Frontend UI with modern design
-✅ International invoice support (4 countries)
-✅ Multi-currency handling (8 currencies)
-✅ QuickBooks integration (IIF export)
-✅ Batch operations
-✅ Search & filter
-
-### Next Steps:
-
-**Immediate:**
-1. Test with your own real invoices
-2. Show it to potential users
-3. Gather feedback
-
-**This Week:**
-1. Deploy to production (if ready)
-2. Start Phase 1: Multi-Tenancy
-3. Add team collaboration
-
-**Next 2-3 Months:**
-1. Implement SaaS features
-2. Add subscription billing
-3. Launch to public
-4. Target: $165K ARR in Year 1
+1. Select an invoice
+2. Click "Export" → "QuickBooks IIF"
+3. Download the .iif file
+4. Import into QuickBooks Desktop
 
 ---
 
 ## 🐛 Troubleshooting
 
-### Problem: "Port 3000 already in use"
+### Backend won't start
 
+**Error: `ModuleNotFoundError`**
 ```bash
-# Find what's using port 3000
-lsof -ti:3000
+# Make sure you pulled latest code
+git pull
 
-# Kill it
-kill -9 $(lsof -ti:3000)
-
-# Try again
-cd clarity-web && npm run dev
-```
-
-### Problem: "Port 8000 already in use"
-
-```bash
-# Find what's using port 8000
-lsof -ti:8000
-
-# Kill it
-kill -9 $(lsof -ti:8000)
-
-# Try again
-cd clarity-api && uvicorn app.main:app --reload
-```
-
-### Problem: "Module not found" errors
-
-**Backend:**
-```bash
-cd clarity-api
-source venv/bin/activate
+# Reinstall dependencies
 pip install -r requirements.txt
 ```
 
-**Frontend:**
+**Error: `Can't connect to database`**
 ```bash
-cd clarity-web
-rm -rf node_modules package-lock.json
+# Check if PostgreSQL is running
+docker ps  # If using Docker
+# OR
+pg_isready  # If local PostgreSQL
+
+# Verify DATABASE_URL in .env
+cat .env | grep DATABASE_URL
+```
+
+**Error: `Alembic migration failed`**
+```bash
+# Reset migrations (WARNING: deletes data)
+docker exec -it ap-agent-db-1 psql -U postgres -d clarity -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+
+# Re-run migrations
+alembic upgrade head
+```
+
+### Frontend won't build
+
+**Error: `Expected '>', got 'value'`**
+```bash
+# Clear all caches
+rm -rf .next node_modules/.cache
+npm cache clean --force
 npm install
+npm run dev
 ```
 
-### Problem: Database connection errors
-
+**Error: `Can't connect to API`**
 ```bash
-# Check PostgreSQL is running
-pg_isready
+# Check if backend is running
+curl http://localhost:8000/health
 
-# If not running, start it:
-# Mac:
-brew services start postgresql@15
-
-# Linux:
-sudo service postgresql start
-
-# Windows:
-net start postgresql-x64-15
+# Verify .env.local
+cat .env.local
+# Should have: NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
 
-### Problem: Tests fail
+### Docker issues
 
-1. **Check backend logs** (Terminal 1)
-2. **Check frontend logs** (Terminal 2)
-3. **Check browser console** (F12 → Console tab)
-4. **Verify database** is running and migrated:
-   ```bash
-   cd clarity-api
-   source venv/bin/activate
-   alembic current  # Should show migration version
-   ```
-
-### Problem: Can't download from GitHub
-
-**Check your access:**
+**Error: `port already in use`**
 ```bash
-# Test SSH connection
-ssh -T git@github.com
+# Stop conflicting services
+docker-compose down
+lsof -ti:8000 | xargs kill  # Mac/Linux
+# OR find and kill process on Windows
 
-# Or use HTTPS instead
-git clone https://github.com/YOUR-USERNAME/AP-Agent.git
+# Start again
+docker-compose up -d
 ```
+
+**Error: `build failed`**
+```bash
+# Clean Docker cache
+docker system prune -a
+docker-compose build --no-cache
+docker-compose up -d
+```
+
+---
+
+## 📊 Feature Testing Checklist
+
+- [ ] Register new account
+- [ ] Login with credentials
+- [ ] Upload PDF invoice
+- [ ] Upload image invoice (JPG/PNG)
+- [ ] View extracted data with confidence scores
+- [ ] Edit extracted data
+- [ ] Save invoice
+- [ ] List all invoices
+- [ ] Search/filter invoices
+- [ ] Export single invoice to IIF
+- [ ] Export multiple invoices to IIF
+- [ ] Export to CSV
+- [ ] View invoice details
+- [ ] Delete invoice
+- [ ] Logout
+
+---
+
+## 🎯 What Works Out of the Box
+
+### ✅ Working Features
+
+1. **Authentication**
+   - User registration
+   - Login/logout
+   - JWT tokens
+   - Password hashing with bcrypt
+
+2. **Invoice Upload**
+   - PDF support
+   - Image support (JPG, PNG)
+   - Local storage fallback (no GCS needed)
+   - File validation
+
+3. **AI Extraction** (Mock Mode)
+   - Realistic mock data generation
+   - Confidence scores
+   - Multi-tier processing simulation
+   - International support (INR, USD, EUR, GBP)
+
+4. **Data Management**
+   - View invoices
+   - Edit extracted data
+   - Delete invoices
+   - Vendor auto-creation
+
+5. **QuickBooks Export**
+   - IIF format
+   - CSV format
+   - Multi-currency support
+
+### ⚠️ Requires Configuration
+
+1. **Real AI Extraction**
+   - Set `GEMINI_API_KEY` in `.env`
+   - Currently uses mock service
+
+2. **Cloud Storage**
+   - Set `GOOGLE_APPLICATION_CREDENTIALS` in `.env`
+   - Currently uses local `./storage/invoices` directory
+
+3. **Background Tasks**
+   - Requires Redis (optional for MVP)
+   - Docker Compose includes Redis by default
+
+---
+
+## 📦 What's Included
+
+### Backend Services
+- ✅ FastAPI REST API
+- ✅ PostgreSQL database with migrations
+- ✅ Mock AI extraction (works without API keys)
+- ✅ Local file storage (works without GCS)
+- ✅ JWT authentication
+- ✅ QuickBooks IIF export
+
+### Frontend
+- ✅ Next.js 14 with TypeScript
+- ✅ React 18
+- ✅ Tailwind CSS
+- ✅ Form validation with React Hook Form
+- ✅ API client with Axios
+- ✅ Authentication context
+
+### Docker
+- ✅ PostgreSQL 15
+- ✅ Redis (optional)
+- ✅ Backend container
+- ✅ Frontend container (optional)
+- ✅ Health checks
+- ✅ Volume persistence
+
+---
+
+## 🔐 Security Notes
+
+- Change `SECRET_KEY` in production
+- Use strong passwords (8+ chars, letters + numbers)
+- Set `ENVIRONMENT=production` in production
+- Configure HTTPS/TLS for production
+- Use proper GCS credentials for production
+- Enable CMEK encryption for SOC 2 compliance
 
 ---
 
 ## 📞 Need Help?
 
-**Documentation:**
-- `PROJECT-SUMMARY.md` - Complete overview
-- `INTEGRATION-TESTING-GUIDE.md` - Detailed testing guide
-- `SAAS-ENHANCEMENT-PLAN.md` - SaaS roadmap
-- `UI-OVERVIEW.md` - UI descriptions
-
-**Quick Commands:**
-```bash
-# View backend logs
-cd clarity-api && tail -f app.log
-
-# View frontend logs
-cd clarity-web && npm run dev
-
-# Re-run setup
-./QUICK-START.sh
-
-# Re-run tests
-./run_e2e_tests.sh
-```
+1. Check logs: `docker-compose logs -f api`
+2. Check database: `docker exec -it ap-agent-db-1 psql -U postgres -d clarity`
+3. Restart services: `docker-compose restart`
+4. Full reset: `docker-compose down -v && docker-compose up --build -d`
 
 ---
 
-## 🎉 Congratulations!
-
-If you've made it here and all tests pass, you now have a **production-ready international invoice processing system** that:
-
-- 🌍 Supports 4 countries (India, US, EU, UK)
-- 💱 Handles 8 currencies
-- 📤 Exports to QuickBooks
-- 🔍 Has search & filter
-- 📱 Works on all devices
-- 🎨 Looks professional and modern
-
-**Ready to transform it into a full SaaS platform!**
-
-Next milestone: Implement multi-tenancy and start generating revenue! 💰
+**Status**: ✅ All critical issues fixed and tested  
+**Setup Time**: ~5 minutes with Docker  
+**Difficulty**: Easy

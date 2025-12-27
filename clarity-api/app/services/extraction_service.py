@@ -294,3 +294,31 @@ def process_invoice_extraction(file_path: str, file_name: str, force_tier: int =
             result = mock_tier3_extraction(file_path, file_name)
 
         return result
+
+
+def extract_invoice_data(file_path: str, file_type: str) -> Dict[str, Any]:
+    """
+    Extract data from invoice - wrapper for invoices_simple.py compatibility
+
+    Args:
+        file_path: Path to the invoice file
+        file_type: Type of file (pdf, jpg, png, etc)
+
+    Returns:
+        Dictionary with extracted data, confidence scores, and metadata
+    """
+    # Extract filename from path for logging
+    import os
+    file_name = os.path.basename(file_path) if '/' in file_path or '\\' in file_path else file_path
+
+    # Process the extraction
+    result = process_invoice_extraction(file_path, file_name)
+
+    # Return in the format expected by invoices_simple.py
+    return {
+        "data": result.get("extracted_data", {}),
+        "confidence": result.get("field_confidences", {}),
+        "overall_confidence": result.get("overall_confidence", 0.0),
+        "processing_tier": result.get("processing_tier", "tier1"),
+        "processing_time_ms": result.get("processing_time_ms", 0),
+    }

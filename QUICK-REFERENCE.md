@@ -1,148 +1,208 @@
-# ClarityAP - Quick Reference Card
+# 🚀 ClarityAP - Quick Reference
 
-## 🚀 Fastest Way to Get Started
+## One-Line Setup (Docker)
 
-### 1. Download
 ```bash
-git clone https://github.com/YOUR-USERNAME/AP-Agent.git
-cd AP-Agent
-git checkout claude/setup-backend-dev-01FwJmG2Rkv27vt6YY3mWUs1
+git pull && docker-compose down && docker-compose up --build -d
 ```
 
-### 2. Setup (Choose ONE)
+## Check Status
 
-**A. With Docker (Easiest):**
 ```bash
+# All services
+docker-compose ps
+
+# Backend logs
+docker-compose logs -f api
+
+# Database
+docker exec -it ap-agent-db-1 psql -U postgres -d clarity -c "\dt"
+```
+
+## URLs
+
+- **Backend API**: http://localhost:8000/docs
+- **Frontend**: http://localhost:3000
+- **Health Check**: http://localhost:8000/health
+
+## Common Commands
+
+### Docker
+
+```bash
+# Start all services
 docker-compose up -d
-docker-compose exec backend alembic upgrade head
+
+# Stop all services
+docker-compose down
+
+# Rebuild and restart
+docker-compose up --build -d
+
+# View logs
+docker-compose logs -f
+
+# Shell into backend container
+docker exec -it ap-agent-api-1 bash
+
+# Database shell
+docker exec -it ap-agent-db-1 psql -U postgres -d clarity
 ```
 
-**B. With Local PostgreSQL:**
-```bash
-./QUICK-START.sh
-# Select option [2]
-```
+### Backend (Local)
 
-**C. With Cloud Database:**
-```bash
-./QUICK-START.sh
-# Select option [3]
-# Paste Supabase/Railway URL
-```
-
-### 3. Test
-```bash
-./run_e2e_tests.sh
-```
-
-### 4. Access
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8000/docs
-
----
-
-## 📝 Testing Checklist
-
-- [ ] Run automated tests: `./run_e2e_tests.sh`
-- [ ] Register account at http://localhost:3000
-- [ ] Upload: `test_data/invoice-india-gst.txt`
-- [ ] Verify: ₹ symbol, GSTIN, PAN fields
-- [ ] Upload: `test_data/invoice-us-sales-tax.txt`
-- [ ] Verify: $ symbol, Sales Tax
-- [ ] Test export to QuickBooks
-- [ ] Test batch operations
-- [ ] Test search & filter
-
----
-
-## 🔧 Common Commands
-
-**Start Backend:**
 ```bash
 cd clarity-api
-source venv/bin/activate
+
+# Activate venv
+source venv/bin/activate  # Mac/Linux
+venv\Scripts\activate     # Windows
+
+# Run migrations
+alembic upgrade head
+
+# Start server
 uvicorn app.main:app --reload
+
+# Create migration
+alembic revision --autogenerate -m "description"
 ```
 
-**Start Frontend:**
+### Frontend
+
 ```bash
 cd clarity-web
-npm run dev
+
+# Clear cache and start
+rm -rf .next && npm run dev
+
+# Build for production
+npm run build && npm start
 ```
 
-**Run Tests:**
+## Quick Test
+
 ```bash
-./run_e2e_tests.sh
+# Register
+curl -X POST http://localhost:8000/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@test.com","password":"Test123!","first_name":"John","last_name":"Doe","company_name":"Test Co"}'
+
+# Login
+curl -X POST http://localhost:8000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@test.com","password":"Test123!"}'
+
+# Health
+curl http://localhost:8000/health
 ```
 
-**View Logs:**
+## Environment Files
+
+### Backend `.env` (Docker)
+```env
+DATABASE_URL=postgresql://postgres:postgres@db:5432/clarity
+SECRET_KEY=dev-secret-key-change-in-production
+ENVIRONMENT=development
+BACKEND_CORS_ORIGINS=["http://localhost:3000"]
+```
+
+### Backend `.env.local` (Local)
+```env
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/clarity
+SECRET_KEY=dev-secret-key-change-in-production
+ENVIRONMENT=development
+BACKEND_CORS_ORIGINS=["http://localhost:3000"]
+```
+
+### Frontend `.env.local`
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+## Troubleshooting One-Liners
+
 ```bash
-docker-compose logs -f  # Docker
-tail -f clarity-api/app.log  # Local
+# Full Docker reset
+docker-compose down -v && docker system prune -f && docker-compose up --build -d
+
+# Reset database
+docker exec -it ap-agent-db-1 psql -U postgres -d clarity -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+
+# Clear frontend cache
+rm -rf clarity-web/.next clarity-web/node_modules/.cache
+
+# Rebuild backend
+docker-compose build --no-cache api && docker-compose up -d api
+
+# Check disk space
+docker system df
 ```
 
-**Reset Database:**
+## Database Quick Queries
+
+```sql
+-- List all tables
+\dt
+
+-- Count users
+SELECT COUNT(*) FROM users;
+
+-- Count invoices
+SELECT COUNT(*) FROM invoices;
+
+-- View organizations
+SELECT id, name, slug FROM organizations;
+
+-- Delete test data
+DELETE FROM invoices WHERE created_at < NOW() - INTERVAL '1 day';
+```
+
+## Files Modified in Latest Update
+
+```
+✅ clarity-api/app/api/v1/invoices_simple.py  (line 19)
+✅ clarity-api/app/api/v1/vendors.py           (line 16)
+✅ clarity-api/app/api/v1/quickbooks.py        (line 18)
+✅ clarity-api/app/api/v1/analytics.py         (line 16)
+✅ clarity-api/app/services/extraction_service.py (added extract_invoice_data)
+✅ clarity-api/Dockerfile                      (new)
+✅ clarity-web/Dockerfile                      (new)
+✅ clarity-api/.env                            (updated)
+✅ clarity-api/.env.local                      (new)
+✅ clarity-api/.env.example                    (updated)
+```
+
+## Git Workflow
+
 ```bash
-cd clarity-api
-alembic downgrade base
-alembic upgrade head
+# Pull latest
+git pull
+
+# Check status
+git status
+
+# View recent commits
+git log --oneline -5
+
+# Reset to specific commit
+git reset --hard <commit-hash>
+
+# Discard local changes
+git reset --hard HEAD
 ```
 
----
+## Production Checklist
 
-## 📊 Test Data
-
-| File | Country | Currency | Tax | Special Fields |
-|------|---------|----------|-----|----------------|
-| `test_data/invoice-india-gst.txt` | 🇮🇳 India | ₹ INR | GST 18% | GSTIN, PAN |
-| `test_data/invoice-us-sales-tax.txt` | 🇺🇸 USA | $ USD | Sales Tax 8.25% | - |
-| `test_data/invoice-eu-vat.txt` | 🇪🇺 EU | € EUR | VAT 19% | VAT Number |
-| `test_data/invoice-uk-vat.txt` | 🇬🇧 UK | £ GBP | VAT 20% | VAT Number |
-
----
-
-## 🐛 Quick Troubleshooting
-
-**Port in use:**
-```bash
-kill -9 $(lsof -ti:3000)  # Frontend
-kill -9 $(lsof -ti:8000)  # Backend
-```
-
-**PostgreSQL not running:**
-```bash
-brew services start postgresql@15  # Mac
-sudo service postgresql start  # Linux
-```
-
-**Dependencies issues:**
-```bash
-# Backend
-cd clarity-api && pip install -r requirements.txt
-
-# Frontend
-cd clarity-web && npm install
-```
-
----
-
-## 📖 Full Documentation
-
-- **Complete Setup:** `STEP-BY-STEP-SETUP.md`
-- **Testing Guide:** `INTEGRATION-TESTING-GUIDE.md`
-- **Project Overview:** `PROJECT-SUMMARY.md`
-- **SaaS Roadmap:** `SAAS-ENHANCEMENT-PLAN.md`
-
----
-
-## ✅ Success Criteria
-
-All tests pass when you see:
-- ✅ `[PASS]` for all 12 automated tests
-- ✅ Can register and login
-- ✅ Can upload invoices
-- ✅ Currency symbols display correctly
-- ✅ Can export to QuickBooks
-- ✅ Batch operations work
-
-**Next:** Start Phase 1 (Multi-Tenancy) → SaaS Launch → $165K ARR 🚀
+- [ ] Change `SECRET_KEY` to random 32+ char string
+- [ ] Set `ENVIRONMENT=production`
+- [ ] Configure HTTPS/TLS
+- [ ] Set real `GEMINI_API_KEY`
+- [ ] Configure GCS with proper credentials
+- [ ] Enable GCS CMEK encryption
+- [ ] Set up proper backup strategy
+- [ ] Configure monitoring/alerting
+- [ ] Review CORS origins
+- [ ] Set up rate limiting
+- [ ] Enable API authentication
+- [ ] Configure logging to external service
